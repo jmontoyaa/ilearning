@@ -1,6 +1,6 @@
-<?
+<?php
 
-function step_active($par_paso){
+function step_active($par_paso) {
     if (!isset($_GET['paso'])){
         $paso = 1;
     } else {
@@ -8,10 +8,9 @@ function step_active($par_paso){
     }
     if ($paso==$par_paso){
         echo 'class="current_step" ';
-
     }
-
 }
+
 function split_sql_file(&$ret, $sql) {
     // do not trim, see bug #1030644
     //$sql          = trim($sql);
@@ -119,107 +118,94 @@ function split_sql_file(&$ret, $sql) {
 
     return true;
 } // end of the 'split_sql_file()' function
+
 if (!isset($_GET['paso'])){
     $paso = 1;
 } else {
     $paso=$_GET['paso'];
 }
+
 $title="Proceso de instalacion de ILearning";
 $powered_by="Formacion Digital S.L.";
 
+$file_config = '../main/inc/conf/configuration.php';
+
+$description = null;
+
 switch ($paso) {
     case 1:
-$section="Instalacion ILearning";
-$description=" Pulse siguiente para instalar, o lea la guia de instalacion";
-$description.='<form action="install.php?paso=2" method="post" name="form1"><button class="save" type="submit" value="&nbsp;&nbsp; Click para instalar &nbsp;&nbsp;" >Click para instalar</button></form><br />
-                    <a href="guia_instalacion.html" target="_blank">Guia de instalacion</a>';
+        $section="Instalacion ILearning";
+        $description=" Pulse siguiente para instalar, o lea la guia de instalacion";
+        $description.='<form action="install.php?paso=2" method="post" name="form1"><button class="save" type="submit" value="&nbsp;&nbsp; Click para instalar &nbsp;&nbsp;" >Click para instalar</button></form><br />
+                            <a href="guia_instalacion.html" target="_blank">Guia de instalacion</a>';
 
-break;
+        break;
+    case 2:
+        //comprobamos que todo esta correcto
+        $section="Comprobando datos";
+        $config_exist = false;
+        if (file_exists($file_config)) {
+            $config_exist = true;
+            require_once $file_config;
+            $description = "Comprobamos la conexion a la BD<br>";
+            $db_host = $_configuration['db_host'];
+            $db_user = $_configuration['db_user'];
+            $db_pass = $_configuration['db_password'];
+            $db_prefix = $_configuration['db_prefix'];
+            $conn = mysqli_connect($db_host, $db_user, $db_pass);
+            mysqli_select_db($conn, $db_prefix.'main');
+            $description.= "Conexion a la BD - OK<br>";
+            $description.= '<form action="install.php?paso=3" method="post" name="form1"><button class="save" type="submit" value="&nbsp;&nbsp; Continuar &nbsp;&nbsp;" >Continuar</button></form><br />';
+        } else {
+            $description = "Esta instalado Chamilo correctamente?";
+        }
+        break;
+    case 3:
+        //Ejecutamos y felicitamos.
+        $section = "Instalando ILearning";
 
-case 2:
-//comprobamos que todo esta correcot
-$section="Comprobando datos";
-$file_config='../main/inc/conf/configuration.php';
-$config_exist=False;
+        require_once $file_config;
 
-if (file_exists($file_config)) {
-    $config_exist=True;
-    require_once $file_config;
+        $db_host = $_configuration['db_host'];
+        $db_user = $_configuration['db_user'];
+        $db_pass = $_configuration['db_password'];
+        $db_prefix = $_configuration['db_prefix'];
+        $main_database = $_configuration['main_database'];
+        $url_platform = $_configuration['root_web'];
+
+        $conn = mysqli_connect($db_host, $db_user, $db_pass);
+        mysqli_select_db($conn, $main_database);
+
+        $db_script = 'ilearning.sql';
+        if (file_exists($db_script)) {
+            $sql_text = file_get_contents($db_script);
+        }
+
+        //split in array of sql strings
+        $sql_instructions = array();
+        $success = split_sql_file($sql_instructions, $sql_text);
+
+        //execute the sql instructions
+        $count = count($sql_instructions);
+        for ($i = 0; $i < $count; $i++) {
+            $this_sql_query = $sql_instructions[$i]['query'];
+            mysqli_query($conn, $this_sql_query);
+        }
+
+        $sql="INSERT INTO oauth_consumer_registry VALUES (1,1,'claveconsumer1','noneatthismoment','HMAC-SHA1,PLAINTEXT','".$url_platform."ilearning/oauth/','".$url_platform."','ilearning/oauth/','".$url_platform."ilearning/oauth/request_token.php','".$url_platform."ilearning/oauth/authorize.php','".$url_platform."ilearning/oauth/access_token.php','2011-01-28 11:15:03')";
+        mysqli_query($conn, $sql);
+        $sql="insert into oauth_server_registry values (1,1,'claveconsumer1','noneatthismoment',1,'active','Ilearning Iphone app','ilearning@formaciondigital.com','','','Ilearning Iphone app','','','',0,'','')";
+        mysqli_query($conn, $sql);
+        $description.= "Instalacion finalizada con exito<br> Recordar que hay que borrar el install.php";
+    break;
 }
-if ($config_exist) {
-    $description="Comprobamos la conexion a la bbdd<br>";
-    $db_host = $_configuration['db_host'];
-    $db_user = $_configuration['db_user'];
-    $db_pass = $_configuration['db_password'];
-    $db_prefix = $_configuration['db_prefix'];
-    $conn = mysql_connect($db_host,$db_user,$db_pass,true);
-    mysql_select_db($db_prefix.'main');
-    $description.="Conexion a la bbdd OK<br>";
-    $description.='<form action="install.php?paso=3" method="post" name="form1"><button class="save" type="submit" value="&nbsp;&nbsp; Continuar &nbsp;&nbsp;" >Continuar</button></form><br />';
-
-} else {
-    $description="Esta instalado Chamilo correctamente?";
-
-}
-
-
-break;
-case 3:
-//Ejecutamos y felicitamos.
-$section="Instalando ILearning";
-$file_config='../main/inc/conf/configuration.php';
-require_once $file_config;
-$db_host = $_configuration['db_host'];
-$db_user = $_configuration['db_user'];
-$db_pass = $_configuration['db_password'];
-$db_prefix = $_configuration['db_prefix'];
-$main_database=$_configuration['main_database'];
-$url_platform=$_configuration['root_web'];
-
-$conn = mysql_connect($db_host,$db_user,$db_pass,true);
-mysql_select_db($main_database);
-
-   $db_script = 'ilearning.sql';
-    if (file_exists($db_script)) {
-        $sql_text = file_get_contents($db_script);
-    }
-
-    //split in array of sql strings
-    $sql_instructions = array();
-    $success = split_sql_file($sql_instructions, $sql_text);
-
-    //execute the sql instructions
-    $count = count($sql_instructions);
-    for ($i = 0; $i < $count; $i++) {
-        $this_sql_query = $sql_instructions[$i]['query'];
-        mysql_query($this_sql_query,$conn);
-    }
-
-    $sql="INSERT INTO oauth_consumer_registry VALUES (1,1,'claveconsumer1','noneatthismoment','HMAC-SHA1,PLAINTEXT','".$url_platform."ilearning/oauth/','".$url_platform."','ilearning/oauth/','".$url_platform."ilearning/oauth/request_token.php','".$url_platform."ilearning/oauth/authorize.php','".$url_platform."ilearning/oauth/access_token.php','2011-01-28 11:15:03')";
-    mysql_query($sql,$conn);
-    $sql="insert into oauth_server_registry values (1,1,'claveconsumer1','noneatthismoment',1,'active','Ilearning Iphone app','ilearning@formaciondigital.com','','','Ilearning Iphone app','','','',0,'','')";
-    mysql_query($sql,$conn);
-
-
-
-    $description.= "Instalacion finalizada con exito<br> Recordar que hay que borrar el install.php";
-
-
-
-
-
-break;
-}
-
-
-         
 ?>
 <!DOCTYPE html
      PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <title>&mdash; Instalacion Ilearning</title>
+    <title>&mdash; Instalación Ilearning</title>
     <style type="text/css" media="screen, projection">
         /*<![CDATA[*/
         @import "default.css";
@@ -261,7 +247,7 @@ break;
     <meta http-equiv="Content-Type" content="text/html; charset=<?php echo $charset ?>" />
 <?php } ?>
 </head>
-<body dir="<?php echo $text_dir ?>">
+<body>
 <div id="container">
 
 <div id="header">
@@ -269,10 +255,7 @@ break;
     <div id="header2">Instalacion Ilearning</div>
     <div id="header3">&nbsp;</div>
 </div>
-
-
 <div id="installation_steps">
-    
     <ol>
         <li <?php step_active('1'); ?>>Introduccion</li>
         <li <?php step_active('2'); ?>>Comprobacion BBDD</li>
@@ -283,22 +266,16 @@ break;
 <tr><td>
 <br/><br/>
 <br/><br/>
-                    <? echo $description?>
+<?php echo $description; ?>
 </td></tr></table>
-
   </td>
 </tr>
 </table>
-
-
-
 </form>
 <br style="clear:both;" />
 <div id="footer">
 </div>
 </div>
-
-
 </body>
 </html>
 

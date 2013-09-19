@@ -1,6 +1,5 @@
 <?php
 
-
 include_once "../../main/inc/conf/configuration.php";
 include_once "../../main/inc/lib/main_api.lib.php";
 
@@ -12,19 +11,26 @@ $password = $_configuration['db_password'];
 $database = $_configuration['main_database'];
 // plattform main DB
 $database_main = $_configuration['main_database'];
+
 // dispositive Constants
 define("IPHONE", 1);
 define("ANDROID", 2);
+
 // Plattform url
 $url_plataforma = $_configuration['root_web'];
 // title
 $pieces = explode("_", $_configuration['db_prefix']);
 $title = $pieces[1];
+
 // Icon
 $icono = "icono.png";
 
-$dboptions = array('server' => $hostoauth, 'username' => $username,
-                 'password' => $password,  'database' => $database);
+$dboptions = array(
+    'server' => $hostoauth,
+    'username' => $username,
+    'password' => $password,
+    'database' => $database
+);
 
 /**
  * Verify valid user
@@ -33,10 +39,11 @@ $dboptions = array('server' => $hostoauth, 'username' => $username,
  * @param string password
  */
 
-function isAppUserRegistered ( $username, $password)
+function isAppUserRegistered($username, $password)
 {
 	global $database;
-	$sql =  "select id from " . $database . ".oauth_app_user where username='" . $username . "' and password='" . $password . "'";
+	$sql =  "select id from " . $database . ".oauth_app_user
+	        where username='" . $username . "' and password='" . $password . "'";
 	$result =mysql_query($sql); 
 	if ($row = mysql_fetch_array($result)) 
 	{
@@ -57,22 +64,16 @@ function isAppUserRegistered ( $username, $password)
 function GetUserByCsAndCk ($consumer_key, $consumer_secret=null)
 {
 	global $database;
-	if ($consumer_secret!=null)
-	{
+	if ($consumer_secret!=null) {
 		$sql = "select osr_usa_id_ref from ". $database . ".oauth_server_registry where osr_consumer_key='" . $consumer_key . "' and osr_consumer_secret='". $consumer_secret . "'";
-	}
-	else
-	{
+	} else {
 		$sql = "select osr_usa_id_ref from ". $database . ".oauth_server_registry where osr_consumer_key='" . $consumer_key . "'";
 	}
 
 	$result =mysql_query($sql); 
-	if ($row = mysql_fetch_array($result)) 
-	{
+	if ($row = mysql_fetch_array($result)) {
 		return ($row['osr_usa_id_ref']);
-	}
-	else
-	{
+	} else {
 		die("Datos consumer_key y consumer secret inv&aacute;lidos");
 	}
 }
@@ -86,7 +87,7 @@ function GetUserByCsAndCk ($consumer_key, $consumer_secret=null)
 function IsDokeosUserValid ($username,$password)
 {
 	global $database_main;
-    $password=api_get_encrypted_password($password);
+    $password = api_get_encrypted_password($password);
 	$sql = "select user_id from " . $database_main . ".user where active=1 and username='" . $username . "' and password='". $password. "'";
 	$result =mysql_query($sql); 
 
@@ -153,13 +154,12 @@ function SetAccessUserOauth ($oauth_token,$verifier,$access_token)
 }
 
 /**
- * return plattform user_id
+ * return platform user_id
  * 
  * @param string access_token
  */
 
-function GetUserIdByAccessToken ($access_token)
-{
+function GetUserIdByAccessToken ($access_token){
 global $database_main;
 	$sql = "select user_id from " . $database_main . ".user_oauth where access_token='". $access_token . "'";
 	$result =mysql_query($sql); 
@@ -172,4 +172,3 @@ global $database_main;
 		die("Access token del alumno incorrecto");
 	}
 }
-?>
